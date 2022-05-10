@@ -287,24 +287,29 @@ week, or a set of status values for a piece of data._
 ---
 ### Storing values as Postgres ENUM
 ```ruby
-class CreatePostsStatusesEnum < ActiveRecord::Migration[7.0]
+class AddStatusToPosts < ActiveRecord::Migration[7.0]
   def up
     execute <<-SQL.squish
       CREATE TYPE posts_statuses_enum
         AS ENUM('draft', 'published', 'removed');
     SQL
 
-    change_column(
-      :posts,
-      :status,
-      "posts_statuses_enum USING status::posts_statuses_enum",
-    )
+    add_column :posts, :status, :posts_statuses_enum
   end
 end
 ```
 <!-- .element: class="fragment" -->
-
+---
+### Storing values as Postgres ENUM
 _This migration assumes that you already have a Rails enum backed by a string._
+
+```ruby
+change_column(
+  :posts,
+  :status,
+  "posts_statuses_enum USING status::posts_statuses_enum",
+)
+```
 <!-- .element: class="fragment" -->
 
 Notes:
