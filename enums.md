@@ -7,7 +7,17 @@ _From Wikipedia_
 
 In computer programming, an **enumerated type** (also called **enumeration**, **enum**, [...]) is a data type consisting of a set of named values called elements, members [...].
 ---
-## Enum types in languages
+## Native Enums in Ruby
+
+`¯\_(ツ)_/¯`
+<!-- .element: class="fragment" -->
+
+Notes:
+- module Enumerable
+- class Enumerator
+- gem install rbs (RBS in Ruby 3.0.0)
+---
+## "Native" Enum types in languages
 
 Rust
 
@@ -45,6 +55,39 @@ fn main() {
     // error[E0004]: non-exhaustive patterns: `Removed`
     // not covered
 }
+```
+---
+## Type checking in Ruby using RBS
+
+```
+class Enum
+  # [...]
+end
+
+# RBS: def show: (Enum enum) -> nil
+def show(enum)
+  # [...]
+end
+
+show "String" # Ruby::ArgumentTypeMismatch
+              # Cannot pass a value of type `::String`
+              # as an argument of type `::Enum`
+```
+<!-- .element: class="fragment" -->
+---
+## Enum in Ruby using external libraries
+
+```ruby
+require "dry-types"
+
+PostStatuses =
+  Dry::Types["string"].enum("draft", "published", "removed")
+
+PostStatuses.values # => ["draft", "published", "removed"]
+
+PostStatuses["draft"] # => "draft"
+PostStatuses["other"] # => Dry::Types::ConstraintError
+
 ```
 ---
 ## Enums in Rails
@@ -96,6 +139,15 @@ post.published!
 # ["updated_at", "2021-05-18 16:13:08.524320"], ["id", 1]]
 ```
 <!-- .element: class="fragment" -->
+---
+## "Type checking"
+```ruby
+Post.new(status: :other)
+# assert_valid_value': 'other' is not
+# a valid status (ArgumentError)
+```
+
+
 ---
 ## Advanced Rails Interface
 
@@ -172,7 +224,7 @@ Post.removed.to_sql
 ```
 <!-- .element: class="fragment" -->
 ---
-### Exlicit values for enum elements
+### Explicit values for enum elements
 Even though Array syntax seems more pure and compact you should really avoid it at all cost.
 
 ```ruby
@@ -217,7 +269,7 @@ User
   .joins(<<~SQL.squish)
     LEFT JOINS posts
       ON posts.user_id = user.id
-        AND post.status = 1
+        AND posts.status = 1
   SQL
 ```
 <!-- .element: class="fragment" -->
@@ -229,7 +281,7 @@ User
   .joins(format(<<~SQL.squish, status: status))
     LEFT JOINS posts
       ON posts.user_id = user.id
-        AND post.status = %<status>s
+        AND posts.status = %<status>s
   SQL
 ```
 <!-- .element: class="fragment" -->
@@ -265,7 +317,7 @@ User
   .joins(<<~SQL.squish)
     LEFT JOINS posts
       ON posts.user_id = user.id
-        AND post.status = 'published'
+        AND posts.status = 'published'
   SQL
 ```
 <!-- .element: class="fragment" -->
@@ -285,7 +337,7 @@ week, or a set of status values for a piece of data._
 <!-- .element: class="fragment" -->
 
 ---
-### Storing values as Postgres ENUM
+### Storing values as Postgres Enum
 ```ruby
 class AddStatusToPosts < ActiveRecord::Migration[7.0]
   def up
@@ -300,7 +352,7 @@ end
 ```
 <!-- .element: class="fragment" -->
 ---
-### Storing values as Postgres ENUM
+### Storing values as Postgres Enum
 _This migration assumes that you already have a Rails enum backed by a string._
 
 ```ruby
@@ -317,7 +369,7 @@ Notes:
 - Postgres will fail to perform the change throwing an error and you will have to remove/fix any invalid entries.
 
 ---
-### Enum benefits
+### Benefits of Postgres Enum
 ```ruby
 class Post < ApplicationRecord
   enum :status, { draft: "draft", published: "published" }
@@ -328,7 +380,12 @@ Post.statuses
 ```
 
 ```ruby
-Post.where("state = 'pubilshed'")
+User
+  .joins(<<~SQL.squish)
+    LEFT JOINS posts
+      ON posts.user_id = user.id
+        AND posts.status = 'pubilshed'
+  SQL
 # => PG::InvalidTextRepresentation: ERROR: invalid input
 #    value for enum posts_statuses_enum: "pubilshed"
 
@@ -339,14 +396,90 @@ Post.published.to_sql
 <!-- .element: class="fragment" -->
 
 Notes:
-- An enum value occupies four bytes on disk. The length of an enum value's textual label is limited by the NAMEDATALEN setting compiled into PostgreSQL; in standard builds this means at most 63 bytes.
-
+- An enum value occupies four bytes on disk. The length of an enum value's
+  textual label is limited by the NAMEDATALEN setting compiled into PostgreSQL;
+  in standard builds this means at most 63 bytes.
+- Important benefit: TYPE CHECK ON READING
 
 ---
-### WIP Adding new values to ENUM
+### Adding new values to ENUM
 
 ```
 ALTER TYPE enum_type ADD VALUE 'new_value'; -- appends to list
 ALTER TYPE enum_type ADD VALUE 'new_value' BEFORE 'old_value';
 ALTER TYPE enum_type ADD VALUE 'new_value' AFTER 'old_value';
 ```
+
+---
+## Alternatives
+
+### Check
+<!-- .element: class="fragment" -->
+
+```sql
+CREATE TABLE posts (
+  status TEXT
+    CHECK (status IN ('draft', 'published', 'removed')));
+```
+<!-- .element: class="fragment" -->
+
+### Relation
+<!-- .element: class="fragment" -->
+```sql
+CREATE TABLE valid_statuses (
+  id SERIAL PRIMARY KEY NOT NULL, status TEXT));
+
+INSERT INTO valid_statuses (name) VALUES
+  ('draft'), ('published'), ('removed');
+
+CREATE TABLE posts (
+  status INTEGER REFERENCES valid_statues (id));
+```
+<!-- .element: class="fragment" -->
+
+Notes:
+  - No ability to "type check" the syntax when reading (where) on CHECK
+  - JOIN required: Values as natural keys in the reference table.
+  - JOIN required: Create VIEW, VIEW is sometimes considered antipattern.
+
+---
+## ActiveRecord::PostgresEnum
+
+```ruby
+gem "activerecord-postgres_enum"
+```
+
+```ruby
+create_enum :post_status, ["draft", "published", "removed"]
+
+create_table :posts do
+  t.enum :, enum_type: :post_status
+end
+```
+---
+
+## Shoulda Matchers
+```ruby
+RSpec.describe Post, type: :model do
+  it "#status" do
+    expect(model)
+      .to define_enum_for(:status).
+      .backed_by_column_of_type(:enum)
+      .with_values(
+        draft: "draft",
+        published: "published",
+        removed: "removed",
+      )
+  end
+end
+```
+
+---
+## Summary
+
+- readable queries and definitions in source code
+<!-- .element: class="fragment" -->
+- optimal data storage in the database
+<!-- .element: class="fragment" -->
+- type safety on database level on writes AND reads
+<!-- .element: class="fragment" -->
