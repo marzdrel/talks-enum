@@ -9,9 +9,8 @@ fn debug_status(status: PostStatuses) {
 fn main() {
     let status: PostStatuses = PostStatuses::Draft;
 
-    if status == "Other" { 
-        println!("XX");
-    }
+    if status != PostStatuses::Draft { /* ... */ };
+    // if status != "Other" { [> ... <] };
 
     debug_status(status); // expected enum `PostStatuses`
     debug_status("Draft"); // => expected enum `PostStatuses`

@@ -27,7 +27,7 @@ Notes:
 - No type sigs (now we have RBS, also sorbet)
 - Not much of a point of having Enum type
 ---
-## "Native" Enum types in languages
+## "Native" Enum types
 
 Rust
 
@@ -44,6 +44,8 @@ fn main() {
     debug_status(status);
     debug_status("Draft"); // expected enum `PostStatuses`
     status = 1; // => expected enum `PostStatuses`
+    if status != "Draft" { /* ... */ }
+    // => expected enum `PostStatuses`
 }
 ```
 
