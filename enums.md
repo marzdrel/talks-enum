@@ -1,11 +1,17 @@
 ## Enums
 One word title inspired by "Boundaries", Ruby Conf 2012 talk by Gary Bernhardt
 <!-- .element: class="fragment" -->
+
+Notes:
+  - This is about Rails enums, but I wanted one word title, so no "Rails Enums"
 ---
 ## Enumerated type
 _From Wikipedia_
 
 In computer programming, an **enumerated type** (also called **enumeration**, **enum**, [...]) is a data type consisting of a set of named values called elements, members [...].
+
+Notes:
+  - Typ wyliczeniowy
 ---
 ## Native Enums in Ruby
 
@@ -15,7 +21,6 @@ In computer programming, an **enumerated type** (also called **enumeration**, **
 Notes:
 - module Enumerable
 - class Enumerator
-- gem install rbs (RBS in Ruby 3.0.0)
 ---
 ## "Native" Enum types in languages
 
@@ -74,6 +79,11 @@ show "String" # Ruby::ArgumentTypeMismatch
               # as an argument of type `::Enum`
 ```
 <!-- .element: class="fragment" -->
+
+Notes:
+- gem install rbs (RBS in Ruby 3.0.0)
+- gem install steep (type checking)
+- sorbet by Stripe
 ---
 ## Enum in Ruby using external libraries
 
@@ -196,8 +206,7 @@ end
 ---
 ### Underlying data type
 
-Storing values as Integers
-By default (and by common practice) Rails enums use integer type to store values.
+By default Rails Enums use Integer type to store values.
 
 ```ruby
 class Post < ApplicationRecord
@@ -251,6 +260,10 @@ class AddStatusToPosts < ActiveRecord::Migration[7.0]
   end
 end
 ```
+
+Notes:
+- "limit" defines size of int (shortint for 2)
+- MySQL has tinyint (limit: 1)
 ---
 ### Integer values: Readability issues
 
@@ -461,9 +474,11 @@ end
 ## Shoulda Matchers
 ```ruby
 RSpec.describe Post, type: :model do
+  let(:model) { described_class.new }
+
   it "#status" do
     expect(model)
-      .to define_enum_for(:status).
+      .to define_enum_for(:status)
       .backed_by_column_of_type(:enum)
       .with_values(
         draft: "draft",
