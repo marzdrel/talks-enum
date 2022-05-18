@@ -11,7 +11,9 @@ _From Wikipedia_
 In computer programming, an **enumerated type** (also called **enumeration**, **enum**, [...]) is a data type consisting of a set of named values called elements, members [...].
 
 Notes:
-  - Typ wyliczeniowy
+- Typ wyliczeniowy
+- Typ składający się ze zbioru nazwanych wartości
+- Miesiące: styczeń, luty...
 ---
 ## Native Enums in Ruby
 
@@ -19,8 +21,11 @@ Notes:
 <!-- .element: class="fragment" -->
 
 Notes:
-- module Enumerable
-- class Enumerator
+- Do we have native enums in Ruby in stdlib?
+- module Enumerable, class Enumerator - nope
+- Dynamic language
+- No type sigs (now we have RBS, also sorbet)
+- Not much of a point of having Enum type
 ---
 ## "Native" Enum types in languages
 
@@ -37,10 +42,16 @@ fn debug_status(status: PostStatuses) {
 fn main() {
     let status: PostStatuses = PostStatuses::Draft;
     debug_status(status);
-    debug_status("Other"); // expected enum `PostStatuses`
+    debug_status("Draft"); // expected enum `PostStatuses`
     status = 1; // => expected enum `PostStatuses`
 }
 ```
+
+Notes:
+- Type inference in Rust
+- Dynamic vs Static typing
+- Strong vs Weak typing
+- if status == "Other"
 ---
 ## Enum types in languages
 
@@ -61,6 +72,10 @@ fn main() {
     // not covered
 }
 ```
+
+Notes:
+- Why not case?
+- Adding new status fails the matcher.
 ---
 ## Type checking in Ruby using RBS
 
@@ -84,6 +99,7 @@ Notes:
 - gem install rbs (RBS in Ruby 3.0.0)
 - gem install steep (type checking)
 - sorbet by Stripe
+- Python typing in 3.5
 ---
 ## Enum in Ruby using external libraries
 
@@ -146,7 +162,7 @@ post.draft? # => true
 post.published!
 # UPDATE "posts" SET "status" = ?, "updated_at" = ?
 # WHERE "post"."id" = ? [["status", 1],
-# ["updated_at", "2021-05-18 16:13:08.524320"], ["id", 1]]
+# ["updated_at", "2022-05-18 16:13:08.524320"], ["id", 1]]
 ```
 <!-- .element: class="fragment" -->
 ---
@@ -308,7 +324,7 @@ class AddStatusToPosts < ActiveRecord::Migration[7.0]
       :posts,
       :status,
       :string,
-      limit: 2,
+      null: false,
     )
   end
 end
@@ -418,9 +434,9 @@ Notes:
 ### Adding new values to ENUM
 
 ```
-ALTER TYPE enum_type ADD VALUE 'new_value'; -- appends to list
-ALTER TYPE enum_type ADD VALUE 'new_value' BEFORE 'old_value';
-ALTER TYPE enum_type ADD VALUE 'new_value' AFTER 'old_value';
+ALTER TYPE enum_type ADD VALUE 'new_value'
+ALTER TYPE enum_type ADD VALUE 'new_value' BEFORE 'old_value'
+ALTER TYPE enum_type ADD VALUE 'new_value' AFTER 'old_value'
 ```
 
 ---
@@ -466,7 +482,7 @@ gem "activerecord-postgres_enum"
 create_enum :post_status, ["draft", "published", "removed"]
 
 create_table :posts do
-  t.enum :, enum_type: :post_status
+  t.enum :status, enum_type: :post_status
 end
 ```
 ---
@@ -488,7 +504,6 @@ RSpec.describe Post, type: :model do
   end
 end
 ```
-
 ---
 ## Summary
 
@@ -498,3 +513,10 @@ end
 <!-- .element: class="fragment" -->
 - type safety on database level on writes AND reads
 <!-- .element: class="fragment" -->
+
+---
+## Questions
+
+---
+## Thank you!
+
