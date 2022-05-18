@@ -1,4 +1,5 @@
 #[derive(Debug)]
+#[derive(PartialEq)]
 enum PostStatuses { Draft, Published, Removed }
 
 fn debug_status(status: PostStatuses) {
@@ -8,11 +9,11 @@ fn debug_status(status: PostStatuses) {
 fn main() {
     let status: PostStatuses = PostStatuses::Draft;
 
-    if PostStatuses::Draft > status {
+    if status == "Other" { 
         println!("XX");
     }
 
     debug_status(status); // expected enum `PostStatuses`
-    debug_status("Other"); // => expected enum `PostStatuses`
+    debug_status("Draft"); // => expected enum `PostStatuses`
     status = "Other";
 }
